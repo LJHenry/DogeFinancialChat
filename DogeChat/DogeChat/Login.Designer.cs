@@ -71,6 +71,7 @@
             this.textBoxIP.Name = "textBoxIP";
             this.textBoxIP.Size = new System.Drawing.Size(160, 20);
             this.textBoxIP.TabIndex = 2;
+            this.textBoxIP.Text = "255.255.255.255";
             // 
             // labelPort
             // 
