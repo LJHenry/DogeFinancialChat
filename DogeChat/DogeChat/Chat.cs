@@ -18,8 +18,8 @@ namespace DogeChat
         //Name
         string name;
         //Connection 
-        int port = 3333;
-        string address = "127.0.0.1";
+        int port;
+        string address;
         //Send/Receive clients
         UdpClient send;
         UdpClient receive;
@@ -37,11 +37,16 @@ namespace DogeChat
         private void Chat_Load(object sender, EventArgs e)
         {
             //Login form pops up on start
-            using (Login getName = new Login())
+            using (Login getDetails = new Login())
             {
                 //Get entered name
-                getName.ShowDialog();
-                name = getName.name;
+                getDetails.ShowDialog();
+                name = getDetails.name;
+                port = Convert.ToInt32(getDetails.port);
+                address = getDetails.address;
+
+                //For testing - error handling later
+                checkValues(name, port, address);
 
                 //Detect if user pressed cancel
                 if (name == null)
@@ -55,6 +60,16 @@ namespace DogeChat
                 }
 
             }
+        }
+
+        //Show values in console
+        private Boolean checkValues(string name, int port, string address)
+        {
+            Console.WriteLine("Name: " + name);
+            Console.WriteLine("IP: " + address);
+            Console.WriteLine("Port: " + port);
+
+            return true;
         }
 
         private void setUp()
@@ -92,7 +107,9 @@ namespace DogeChat
 
         private void showMessage(string message)
         {
-            textBoxWindow.Text = textBoxWindow.Text + message + "\n";
+            StringBuilder str = new StringBuilder();
+            str.AppendLine(message);
+            textBoxWindow.Text += str.ToString();
         }
 
         private void buttonSend_Click(object sender, EventArgs e)
@@ -103,11 +120,11 @@ namespace DogeChat
             if (checkBoxImportant.Checked)
             {
                 //Add visual notifiers
-                message = "Important --- " + name + ": " + textBoxMessage.Text + "\n";
+                message = "Important --- " + name + ": " + textBoxMessage.Text;
             }
             else
             {
-                message = name + ": " + textBoxMessage.Text + "\n";
+                message = name + ": " + textBoxMessage.Text;
             }
 
             //Convert to bytes

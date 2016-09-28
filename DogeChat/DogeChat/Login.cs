@@ -14,6 +14,10 @@ namespace DogeChat
     {
         //Name of user
         public string name;
+        //Port
+        public decimal port;
+        //IP
+        public string address;
 
         public Login()
         {
@@ -32,11 +36,13 @@ namespace DogeChat
             {
                 //Set name from textbox
                 name = textBoxName.Text;
+                //Set port and IP
+                port = portSelect.Value;
+                address = textBoxIP.Text;
+
                 //Close login form and open the chat window
                 this.Close();
             }
         }
-
-
     }
 }
