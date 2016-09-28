@@ -107,6 +107,7 @@ namespace DogeChat
 
         private void showMessage(string message)
         {
+            //Append new lines for appearence
             StringBuilder str = new StringBuilder();
             str.AppendLine(message);
             textBoxWindow.Text += str.ToString();
@@ -120,10 +121,11 @@ namespace DogeChat
             if (checkBoxImportant.Checked)
             {
                 //Add visual notifiers
-                message = "Important --- " + name + ": " + textBoxMessage.Text;
+                message = "> > > Important from " + name + ": " + textBoxMessage.Text;
             }
             else
             {
+                //Vanilla message
                 message = name + ": " + textBoxMessage.Text;
             }
 
