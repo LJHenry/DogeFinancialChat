@@ -100,7 +100,7 @@
             0,
             0});
             this.portSelect.Minimum = new decimal(new int[] {
-            1025,
+            80,
             0,
             0,
             0});
@@ -108,7 +108,7 @@
             this.portSelect.Size = new System.Drawing.Size(66, 20);
             this.portSelect.TabIndex = 3;
             this.portSelect.Value = new decimal(new int[] {
-            1025,
+            80,
             0,
             0,
             0});
@@ -118,7 +118,7 @@
             this.AcceptButton = this.buttonLogin;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(184, 161);
+            this.ClientSize = new System.Drawing.Size(184, 162);
             this.Controls.Add(this.portSelect);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.labelPort);

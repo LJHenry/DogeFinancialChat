@@ -9,6 +9,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Windows.Forms;
+using System.Media;
+using System.Security.Cryptography;
+using System.IO;
 
 namespace DogeChat
 {
@@ -25,6 +28,8 @@ namespace DogeChat
         UdpClient receive;
         //Listening thread
         Thread listen;
+
+        Aes aes = Aes.Create();
 
         //Delegate for thread safety, showMessage called from one thread must be safely transfered to the other
         delegate void safeMessage(string msg);
@@ -99,8 +104,10 @@ namespace DogeChat
             while (true)
             {
                 byte[] data = receive.Receive(ref end);
-                string message = Encoding.ASCII.GetString(data);
-                //Invode method with (delegate, parameter)
+                //Decrypt and convert to string
+                string message = decrypt(data, aes.Key, aes.IV);
+                //Invoke method with (delegate, parameter)
+                Console.WriteLine("Messaged received.");
                 Invoke(s, message);
             }
         }
@@ -110,7 +117,21 @@ namespace DogeChat
             //Append new lines for appearence
             StringBuilder str = new StringBuilder();
             str.AppendLine(message);
+
+            if (message.StartsWith("> > >"))
+            {
+                importantAlert();
+            }
+
             textBoxWindow.Text += str.ToString();
+            
+        }
+
+        //Important message alert
+        private void importantAlert()
+        {
+            SoundPlayer impAlert = new SoundPlayer(@"C:\Windows\Media\Windows Balloon.wav");
+            impAlert.Play();
         }
 
         private void buttonSend_Click(object sender, EventArgs e)
@@ -129,14 +150,87 @@ namespace DogeChat
                 message = name + ": " + textBoxMessage.Text;
             }
 
-            //Convert to bytes
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            //Convert to bytes and encrypt
+            byte[] data = encrypt(message, aes.Key, aes.IV);
             //Send 
             send.Send(data, data.Length);
 
             //Clean textbox and checkbox
             textBoxMessage.Text = "";
             checkBoxImportant.Checked = false;
+        }
+
+        //Encryption
+        static byte[] encrypt(string message, byte[] key, byte[] IV)
+        {
+            //Check for null and throw exceptions
+            if (message == null || message.Length <= 0)
+                throw new ArgumentNullException("Message");
+            if (key == null || key.Length <= 0)
+                throw new ArgumentNullException("Key");
+            if (IV == null || IV.Length <= 0)
+                throw new ArgumentNullException("IV");
+
+            byte[] encrypted;
+            //AES,  Symmetric encryption
+            using (Aes algorithm = Aes.Create())
+            {
+                algorithm.Key = key;
+                algorithm.IV = IV;
+
+                //Create encryptor
+                ICryptoTransform encryptor = algorithm.CreateEncryptor(algorithm.Key, algorithm.IV);
+
+                //Streams for encryption
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter sw = new StreamWriter(cs))
+                        {
+                            sw.Write(message);
+                        }
+                        //String to bytes[]
+                        encrypted = ms.ToArray();
+                    }
+                }
+            }
+
+            //Test
+            Console.WriteLine(Encoding.Default.GetString(encrypted));
+
+            //Return the encrypted bytes
+            return encrypted;
+        }
+
+        //Decryption
+        static string decrypt(byte[] cipher, byte[] key, byte[] IV)
+        {
+            string message;
+
+            using (Aes algorithm = Aes.Create())
+            {
+                algorithm.Key = key;
+                algorithm.IV = IV;
+
+                //Create decryptor
+                ICryptoTransform decryptor = algorithm.CreateDecryptor(algorithm.Key, algorithm.IV);
+
+                //Streams for decrytpion
+                using (MemoryStream ms = new MemoryStream(cipher))
+                {
+                    using(CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader sr = new StreamReader(cs))
+                        {
+                            //Bytes[] to string
+                            message = sr.ReadToEnd();
+                        }
+                    }
+                }
+            }
+
+            return message;
         }
 
         //Handler for Send button when 'enter' is pressed
