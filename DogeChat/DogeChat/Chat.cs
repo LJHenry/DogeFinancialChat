@@ -68,6 +68,7 @@ namespace DogeChat
         }
 
         //Show values in console
+        //Bool so false can be returned if error encountered - will be added later
         private Boolean checkValues(string name, int port, string address)
         {
             Console.WriteLine("Name: " + name);
@@ -118,13 +119,13 @@ namespace DogeChat
             StringBuilder str = new StringBuilder();
             str.AppendLine(message);
 
+            //Play sound
             if (message.StartsWith("> > >"))
             {
                 importantAlert();
             }
 
             textBoxWindow.Text += str.ToString();
-            
         }
 
         //Important message alert
@@ -240,6 +241,13 @@ namespace DogeChat
             {
                 buttonSend.PerformClick();
             }
+        }
+
+        //Scroll to end when textbox is changed
+        private void textBoxWindow_TextChanged(object sender, EventArgs e)
+        {
+            textBoxWindow.SelectionStart = textBoxWindow.Text.Length;
+            textBoxWindow.ScrollToCaret();
         }
     }
 }

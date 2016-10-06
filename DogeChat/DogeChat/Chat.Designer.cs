@@ -65,6 +65,7 @@
             this.textBoxWindow.Size = new System.Drawing.Size(431, 211);
             this.textBoxWindow.TabIndex = 2;
             this.textBoxWindow.TabStop = false;
+            this.textBoxWindow.TextChanged += new System.EventHandler(this.textBoxWindow_TextChanged);
             // 
             // checkBoxImportant
             // 
