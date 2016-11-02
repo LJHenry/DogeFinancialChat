@@ -44,6 +44,9 @@ namespace DogeChat
             //Login form pops up on start
             using (Login getDetails = new Login())
             {
+                //Hardcoded encryption key
+                aes.Key.Equals(Encoding.Default.GetBytes("wowsuchdoge"));
+
                 //Get entered name
                 getDetails.ShowDialog();
                 name = getDetails.name;
@@ -115,8 +118,11 @@ namespace DogeChat
 
         private void showMessage(string message)
         {
-            //Append new lines for appearence
             StringBuilder str = new StringBuilder();
+            //Add current date and time
+            DateTime currentDT = DateTime.Now;
+            str.Append(currentDT.ToString() + " ");
+            //Append new lines for appearence
             str.AppendLine(message);
 
             //Play sound
@@ -143,7 +149,7 @@ namespace DogeChat
             if (checkBoxImportant.Checked)
             {
                 //Add visual notifiers
-                message = "> > > Important from " + name + ": " + textBoxMessage.Text;
+                message = "> > > " + name + ": " + textBoxMessage.Text;
             }
             else
             {
