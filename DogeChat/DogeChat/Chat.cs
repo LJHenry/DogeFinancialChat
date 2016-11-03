@@ -28,6 +28,13 @@ namespace DogeChat
         UdpClient receive;
         //Listening thread
         Thread listen;
+        //Name of clients
+        string peerName;
+        //Strings to store chat Logs
+        //Normal chat - must delete after 6 months
+        string normal;
+        //Important messages - permanent
+        string important;
 
         Aes aes = Aes.Create();
 
@@ -44,9 +51,6 @@ namespace DogeChat
             //Login form pops up on start
             using (Login getDetails = new Login())
             {
-                //Hardcoded encryption key
-                aes.Key.Equals(Encoding.Default.GetBytes("wowsuchdoge"));
-
                 //Get entered name
                 getDetails.ShowDialog();
                 name = getDetails.name;
@@ -63,10 +67,11 @@ namespace DogeChat
                 }
                 else
                 {
+                    //Hardcoded encryption key
+                    aes.Key.Equals(Encoding.Default.GetBytes("wowsuchdoge"));
                     //Set up Udp clients
                     setUp();
                 }
-
             }
         }
 
@@ -96,8 +101,6 @@ namespace DogeChat
             listen.Start();
         }
 
-
-
         private void listener()
         {
             //Any IP, specific port
@@ -110,38 +113,44 @@ namespace DogeChat
                 byte[] data = receive.Receive(ref end);
                 //Decrypt and convert to string
                 string message = decrypt(data, aes.Key, aes.IV);
+
+                //Work out who sent last message so a chat log
+                //can be saved under this name.
+                compareNames(message);
+                
                 //Invoke method with (delegate, parameter)
-                Console.WriteLine("Messaged received.");
+                //Console.WriteLine("Messaged received from " + peerName);
                 Invoke(s, message);
             }
         }
 
-        private void showMessage(string message)
+        private string compareNames(string msg)
         {
-            StringBuilder str = new StringBuilder();
-            //Add current date and time
-            DateTime currentDT = DateTime.Now;
-            str.Append(currentDT.ToString() + " ");
-            //Append new lines for appearence
-            str.AppendLine(message);
-
-            //Play sound
-            if (message.StartsWith("> > >"))
+            //Get sending clients name from Message
+            //Handle own name
+            int index = msg.IndexOf(':');
+            peerName = msg.Substring(0, index);
+            if (peerName.Equals(name))
             {
-                importantAlert();
+                peerName = "Self";
             }
-
-            textBoxWindow.Text += str.ToString();
-        }
-
-        //Important message alert
-        private void importantAlert()
-        {
-            SoundPlayer impAlert = new SoundPlayer(@"C:\Windows\Media\Windows Balloon.wav");
-            impAlert.Play();
+            else if (peerName.Equals("> > > " + name))
+            {
+                peerName = "SelfImportant";
+            }
+            else if (peerName.StartsWith("> > >"))
+            {
+                peerName = peerName.Substring(6) + "Important";
+            }
+            return peerName;
         }
 
         private void buttonSend_Click(object sender, EventArgs e)
+        {
+            sendMessage();
+        }
+
+        private void sendMessage()
         {
             string message;
 
@@ -165,6 +174,18 @@ namespace DogeChat
             //Clean textbox and checkbox
             textBoxMessage.Text = "";
             checkBoxImportant.Checked = false;
+        }
+
+        //Message from system
+        private void sendSystemMessage(string msg)
+        {
+            string message;
+
+            message = "<System>:" + msg;
+            //Convert to bytes and encrypt
+            byte[] data = encrypt(message, aes.Key, aes.IV);
+            //Send 
+            send.Send(data, data.Length);
         }
 
         //Encryption
@@ -240,6 +261,84 @@ namespace DogeChat
             return message;
         }
 
+        //Format chat messages and display in window
+        private void showMessage(string message)
+        {
+            StringBuilder str = new StringBuilder();
+            //Add current date and time
+            DateTime currentDT = DateTime.Now;
+            str.Append(currentDT.ToString() + " ");
+            //Append new lines for appearence
+            str.AppendLine(message);
+
+            //Check if important
+            if (message.StartsWith("> > >"))
+            {
+                //Alert and save to important list
+                importantAlert();
+                logImportant(str.ToString());
+            }
+            else
+            {
+                Console.WriteLine(str.ToString());
+                logNormal(str.ToString());
+            }
+
+            textBoxWindow.Text += str.ToString();
+        }
+        
+        //Add normal chat to list
+        private void logNormal(string item)
+        {
+            normal = item;
+            saveChatLog(normal);
+            normal = "";
+        }
+
+        //Add important messages to separate list
+        private void logImportant(string item)
+        {
+            important = item;
+            saveChatLog(important);
+            important = "";
+        }
+
+        //Save the lists to text files
+        private void saveChatLog(string log)
+        {
+            //Check if file already created
+            if (checkExists(peerName))
+            {
+                //Append
+                File.AppendAllText(peerName, log);
+            }
+            else
+            {
+                //Create
+                File.WriteAllText(peerName, log);
+            }
+        }
+
+        //Does file exist in same directory as .exe
+        private bool checkExists(string name)
+        {
+            if (File.Exists(name))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        //Important message alert
+        private void importantAlert()
+        {
+            SoundPlayer impAlert = new SoundPlayer(@"C:\Windows\Media\Windows Balloon.wav");
+            impAlert.Play();
+        }
+
         //Handler for Send button when 'enter' is pressed
         private void buttonSend_KeyDown(object sender, KeyEventArgs e)
         {
@@ -254,6 +353,11 @@ namespace DogeChat
         {
             textBoxWindow.SelectionStart = textBoxWindow.Text.Length;
             textBoxWindow.ScrollToCaret();
+        }
+
+        private void Chat_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            sendSystemMessage(name + " has left chat.");
         }
     }
 }

@@ -92,6 +92,7 @@
             this.MinimumSize = new System.Drawing.Size(472, 300);
             this.Name = "Chat";
             this.Text = "Doge Chat";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Chat_FormClosing);
             this.Load += new System.EventHandler(this.Chat_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

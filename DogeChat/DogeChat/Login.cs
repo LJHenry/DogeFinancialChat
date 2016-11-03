@@ -27,9 +27,9 @@ namespace DogeChat
         private void buttonLogin_Click(object sender, EventArgs e)
         {
             
-            if (textBoxName.Text.Equals(""))
+            if (textBoxName.Text.Equals("") || textBoxName.Text.StartsWith("> > >"))
             {
-                MessageBox.Show("Name empty, please provide a name.");
+                MessageBox.Show("Illegal name, please provide a valid name.");
                 return;
             }
             else
