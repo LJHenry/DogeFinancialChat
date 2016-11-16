@@ -37,8 +37,6 @@ namespace DogeChat
         //Important messages - permanent
         string important;
 
-        Aes aes = Aes.Create();
-
         //Delegate for thread safety, showMessage called from one thread must be safely transfered to the other
         delegate void safeMessage(string msg);
 
@@ -59,6 +57,9 @@ namespace DogeChat
                 port = Convert.ToInt32(getDetails.port);
                 address = getDetails.address;
 
+                //Initialise logName string, prevent null reference if no name error occurs
+                logName = "";
+
                 //For testing - error handling later
                 checkValues(name, port, address);
 
@@ -69,9 +70,6 @@ namespace DogeChat
                 }
                 else
                 {
-                    //Encryption key from password
-                    //This is hardcoded to allow decryption on both clients without sending the data over an unsecured network
-                    aes.Key = (Encoding.Default.GetBytes("DO4GE69420W0WSUCHM3M35P2"));
                     //Set up Udp clients
                     setUp();
                 }
@@ -79,7 +77,7 @@ namespace DogeChat
         }
 
         //Show values in console
-        //Bool so false can be returned if error encountered - will be added later
+        //Bool so false can be returned if error encountered
         private Boolean checkValues(string name, int port, string address)
         {
             Console.WriteLine("Name: " + name);
@@ -115,7 +113,7 @@ namespace DogeChat
             {
                 byte[] data = receive.Receive(ref end);
                 //Decrypt and convert to string
-                string message = decrypt(data, aes.Key, aes.IV);
+                string message = decrypt(data);
 
                 //Determine if the message will be saved in the normal or important log
                 getLogName(message);
@@ -129,12 +127,13 @@ namespace DogeChat
         //Get name + importance of message sender
         private string getLogName(string msg)
         {
-            int index = msg.IndexOf(':');
-            logName = msg.Substring(0, index);
-            if (logName.StartsWith("> > >"))
-            {
-                logName = logName.Substring(6) + "Important";
-            }
+                int index = msg.IndexOf(':');
+                logName = msg.Substring(0, index);
+                if (logName.StartsWith("> > >"))
+                {
+                    logName = logName.Substring(6) + "Important";
+                }
+
             return logName;
         }
 
@@ -160,7 +159,7 @@ namespace DogeChat
             }
 
             //Convert to bytes and encrypt
-            byte[] data = encrypt(message, aes.Key, aes.IV);
+            byte[] data = encrypt(message);
             //Send 
             send.Send(data, data.Length);
 
@@ -176,28 +175,21 @@ namespace DogeChat
 
             message = "<System>:" + msg;
             //Convert to bytes and encrypt
-            byte[] data = encrypt(message, aes.Key, aes.IV);
+            byte[] data = encrypt(message);
             //Send 
             send.Send(data, data.Length);
         }
 
         //Encryption
-        static byte[] encrypt(string message, byte[] key, byte[] IV)
+        static byte[] encrypt(string message)
         {
-            //Check for null and throw exceptions
-            if (message == null || message.Length <= 0)
-                throw new ArgumentNullException("Message");
-            if (key == null || key.Length <= 0)
-                throw new ArgumentNullException("Key");
-            if (IV == null || IV.Length <= 0)
-                throw new ArgumentNullException("IV");
-
             byte[] encrypted;
             //AES,  Symmetric encryption
             using (Aes algorithm = Aes.Create())
             {
-                algorithm.Key = key;
-                algorithm.IV = IV;
+                algorithm.Padding = PaddingMode.PKCS7;
+                algorithm.Key = (Encoding.Default.GetBytes("DO4GE69420W0WSUCHM3M35P2"));
+                algorithm.IV = (Encoding.Default.GetBytes("W0W5UC4D0G3CH4T5"));
 
                 //Create encryptor
                 ICryptoTransform encryptor = algorithm.CreateEncryptor(algorithm.Key, algorithm.IV);
@@ -225,14 +217,15 @@ namespace DogeChat
         }
 
         //Decryption
-        static string decrypt(byte[] cipher, byte[] key, byte[] IV)
+        static string decrypt(byte[] cipher)
         {
             string message;
 
             using (Aes algorithm = Aes.Create())
             {
-                algorithm.Key = key;
-                algorithm.IV = IV;
+                algorithm.Padding = PaddingMode.PKCS7;
+                algorithm.Key = (Encoding.Default.GetBytes("DO4GE69420W0WSUCHM3M35P2"));
+                algorithm.IV = (Encoding.Default.GetBytes("W0W5UC4D0G3CH4T5"));
 
                 //Create decryptor
                 ICryptoTransform decryptor = algorithm.CreateDecryptor(algorithm.Key, algorithm.IV);
