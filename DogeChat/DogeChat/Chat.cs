@@ -67,6 +67,9 @@ namespace DogeChat
                 {
                     //Set up Udp clients
                     setUp();
+                    //Send greeting
+                    textBoxMessage.Text = "<is now chatting>";
+                    sendMessage();
                 }
             }
         }
@@ -237,10 +240,6 @@ namespace DogeChat
         {
             //Modify string
             StringBuilder str = new StringBuilder();
-            //Append line for appearence
-            str.AppendLine(message);
-            //DateTime object
-            DateTime currentDT = DateTime.Now;
 
             //Check if important
             if (message.StartsWith("> > >"))
@@ -251,10 +250,8 @@ namespace DogeChat
                 //Save to important log if sent by this client
                 if (logName.Equals(importantName))
                 {
-                    //Add time-stamp
-                    str.Append(currentDT.ToString() + " ");
                     //Re-encrypt message
-                    saveToChatLog(System.Text.Encoding.UTF8.GetString(encrypt(message)));
+                    saveToChatLog(encrypt(message));
                 }
             }
             else
@@ -262,31 +259,36 @@ namespace DogeChat
                 //Save to normal log if sent by this client
                 if (logName.Equals(name))
                 {
-                    //Add time-stamp
-                    str.Append(currentDT.ToString() + " ");
                     //Re-encrypt message
-                    saveToChatLog(System.Text.Encoding.UTF8.GetString(encrypt(message)));
+                    saveToChatLog(encrypt(message));
                 }
             }
 
+            //Append line for appearence
+            str.AppendLine(message);
             //Show message
             textBoxWindow.Text += str.ToString();
         }
 
         //Save the message to text file
         //Correct file determined by value of logName
-        private void saveToChatLog(string message)
+        private void saveToChatLog(byte[] message)
         {
+            //DateTime object
+            DateTime currentDT = DateTime.Now;
+
             //Check if file already created
             if (checkExists(logName))
             {
                 //Append
-                File.AppendAllText(logName, message);
+                File.AppendAllText(logName, currentDT.ToString());
+                File.AppendAllText(logName, System.Text.Encoding.UTF8.GetString(message) + "\n");
             }
             else
             {
                 //Create
-                File.WriteAllText(logName, message);
+                File.AppendAllText(logName, currentDT.ToString());
+                File.WriteAllText(logName, System.Text.Encoding.UTF8.GetString(message) + "\n");
             }
         }
 
