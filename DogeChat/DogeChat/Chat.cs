@@ -19,7 +19,8 @@ namespace DogeChat
     {
         //Globals
         //Name
-        string name;
+        static string name;
+        static string importantName;
         //Connection 
         int port;
         string address;
@@ -28,8 +29,8 @@ namespace DogeChat
         UdpClient receive;
         //Listening thread
         Thread listen;
-        //Name of clients
-        string peerName;
+        //Name of chat log  file
+        string logName;
         //Strings to store chat Logs
         //Normal chat - must delete after 6 months
         string normal;
@@ -54,6 +55,7 @@ namespace DogeChat
                 //Get entered name
                 getDetails.ShowDialog();
                 name = getDetails.name;
+                importantName = getDetails.name + "Important";
                 port = Convert.ToInt32(getDetails.port);
                 address = getDetails.address;
 
@@ -67,8 +69,9 @@ namespace DogeChat
                 }
                 else
                 {
-                    //Hardcoded encryption key
-                    aes.Key.Equals(Encoding.Default.GetBytes("wowsuchdoge"));
+                    //Encryption key from password
+                    //This is hardcoded to allow decryption on both clients without sending the data over an unsecured network
+                    aes.Key = (Encoding.Default.GetBytes("DO4GE69420W0WSUCHM3M35P2"));
                     //Set up Udp clients
                     setUp();
                 }
@@ -114,35 +117,25 @@ namespace DogeChat
                 //Decrypt and convert to string
                 string message = decrypt(data, aes.Key, aes.IV);
 
-                //Work out who sent last message so a chat log
-                //can be saved under this name.
-                compareNames(message);
+                //Determine if the message will be saved in the normal or important log
+                getLogName(message);
                 
                 //Invoke method with (delegate, parameter)
-                //Console.WriteLine("Messaged received from " + peerName);
+                Console.WriteLine("Messaged received from " + logName);
                 Invoke(s, message);
             }
         }
 
-        private string compareNames(string msg)
+        //Get name + importance of message sender
+        private string getLogName(string msg)
         {
-            //Get sending clients name from Message
-            //Handle own name
             int index = msg.IndexOf(':');
-            peerName = msg.Substring(0, index);
-            if (peerName.Equals(name))
+            logName = msg.Substring(0, index);
+            if (logName.StartsWith("> > >"))
             {
-                peerName = "Self";
+                logName = logName.Substring(6) + "Important";
             }
-            else if (peerName.Equals("> > > " + name))
-            {
-                peerName = "SelfImportant";
-            }
-            else if (peerName.StartsWith("> > >"))
-            {
-                peerName = peerName.Substring(6) + "Important";
-            }
-            return peerName;
+            return logName;
         }
 
         private void buttonSend_Click(object sender, EventArgs e)
@@ -276,18 +269,23 @@ namespace DogeChat
             {
                 //Alert and save to important list
                 importantAlert();
-                logImportant(str.ToString());
+                if (logName.Equals(importantName))
+                {
+                    logImportant(str.ToString());
+                }
             }
             else
             {
-                Console.WriteLine(str.ToString());
-                logNormal(str.ToString());
+                if (logName.Equals(name))
+                {
+                    logNormal(str.ToString());
+                }
             }
 
             textBoxWindow.Text += str.ToString();
         }
         
-        //Add normal chat to list
+        //Add normal chat to log
         private void logNormal(string item)
         {
             normal = item;
@@ -295,7 +293,7 @@ namespace DogeChat
             normal = "";
         }
 
-        //Add important messages to separate list
+        //Add important messages to log
         private void logImportant(string item)
         {
             important = item;
@@ -307,15 +305,15 @@ namespace DogeChat
         private void saveChatLog(string log)
         {
             //Check if file already created
-            if (checkExists(peerName))
+            if (checkExists(logName))
             {
                 //Append
-                File.AppendAllText(peerName, log);
+                File.AppendAllText(logName, log);
             }
             else
             {
                 //Create
-                File.WriteAllText(peerName, log);
+                File.WriteAllText(logName, log);
             }
         }
 
@@ -355,9 +353,11 @@ namespace DogeChat
             textBoxWindow.ScrollToCaret();
         }
 
+        /* Unused 
         private void Chat_FormClosing(object sender, FormClosingEventArgs e)
         {
             sendSystemMessage(name + " has left chat.");
         }
+        */
     }
 }
