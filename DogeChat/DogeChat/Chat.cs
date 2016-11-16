@@ -31,11 +31,6 @@ namespace DogeChat
         Thread listen;
         //Name of chat log  file
         string logName;
-        //Strings to store chat Logs
-        //Normal chat - must delete after 6 months
-        string normal;
-        //Important messages - permanent
-        string important;
 
         //Delegate for thread safety, showMessage called from one thread must be safely transfered to the other
         delegate void safeMessage(string msg);
@@ -76,8 +71,7 @@ namespace DogeChat
             }
         }
 
-        //Show values in console
-        //Bool so false can be returned if error encountered
+        //ADD ERROR HANDLING HERE
         private Boolean checkValues(string name, int port, string address)
         {
             Console.WriteLine("Name: " + name);
@@ -102,6 +96,7 @@ namespace DogeChat
             listen.Start();
         }
 
+        //Specified port listener
         private void listener()
         {
             //Any IP, specific port
@@ -116,25 +111,24 @@ namespace DogeChat
                 string message = decrypt(data);
 
                 //Determine if the message will be saved in the normal or important log
-                getLogName(message);
-                
+                setLogName(message);
+
                 //Invoke method with (delegate, parameter)
-                Console.WriteLine("Messaged received from " + logName);
                 Invoke(s, message);
             }
         }
 
         //Get name + importance of message sender
-        private string getLogName(string msg)
+        private void setLogName(string msg)
         {
-                int index = msg.IndexOf(':');
-                logName = msg.Substring(0, index);
-                if (logName.StartsWith("> > >"))
-                {
-                    logName = logName.Substring(6) + "Important";
-                }
+            //Substring - name occurs before colon i.e. 'Louis:'
+            int index = msg.IndexOf(':');
+            logName = msg.Substring(0, index);
 
-            return logName;
+            if (logName.StartsWith("> > >"))
+            {
+                logName = logName.Substring(6) + "Important";
+            }
         }
 
         private void buttonSend_Click(object sender, EventArgs e)
@@ -142,6 +136,7 @@ namespace DogeChat
             sendMessage();
         }
 
+        //Format message and send 
         private void sendMessage()
         {
             string message;
@@ -160,24 +155,12 @@ namespace DogeChat
 
             //Convert to bytes and encrypt
             byte[] data = encrypt(message);
-            //Send 
+            //Send
             send.Send(data, data.Length);
 
             //Clean textbox and checkbox
             textBoxMessage.Text = "";
             checkBoxImportant.Checked = false;
-        }
-
-        //Message from system
-        private void sendSystemMessage(string msg)
-        {
-            string message;
-
-            message = "<System>:" + msg;
-            //Convert to bytes and encrypt
-            byte[] data = encrypt(message);
-            //Send 
-            send.Send(data, data.Length);
         }
 
         //Encryption
@@ -233,7 +216,7 @@ namespace DogeChat
                 //Streams for decrytpion
                 using (MemoryStream ms = new MemoryStream(cipher))
                 {
-                    using(CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                    using (CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
                     {
                         using (StreamReader sr = new StreamReader(cs))
                         {
@@ -247,11 +230,11 @@ namespace DogeChat
             return message;
         }
 
-        //Format chat messages and display in window
+        //Format message and display in window
         private void showMessage(string message)
         {
             StringBuilder str = new StringBuilder();
-            //Add current date and time
+            //Add current date and time to chat window message
             DateTime currentDT = DateTime.Now;
             str.Append(currentDT.ToString() + " ");
             //Append new lines for appearence
@@ -260,42 +243,30 @@ namespace DogeChat
             //Check if important
             if (message.StartsWith("> > >"))
             {
-                //Alert and save to important list
+                //Alert
                 importantAlert();
+                //Save to important log if sent by this client
                 if (logName.Equals(importantName))
                 {
-                    logImportant(str.ToString());
+                    saveToChatLog(message);
                 }
             }
             else
             {
+                //Save to normal log if sent by this client
                 if (logName.Equals(name))
                 {
-                    logNormal(str.ToString());
+                    saveToChatLog(message);
                 }
             }
 
+            //Show message
             textBoxWindow.Text += str.ToString();
         }
-        
-        //Add normal chat to log
-        private void logNormal(string item)
-        {
-            normal = item;
-            saveChatLog(normal);
-            normal = "";
-        }
 
-        //Add important messages to log
-        private void logImportant(string item)
-        {
-            important = item;
-            saveChatLog(important);
-            important = "";
-        }
-
-        //Save the lists to text files
-        private void saveChatLog(string log)
+        //Save the message to text file
+        //Correct file determined by value of logName
+        private void saveToChatLog(string log)
         {
             //Check if file already created
             if (checkExists(logName))
@@ -346,11 +317,5 @@ namespace DogeChat
             textBoxWindow.ScrollToCaret();
         }
 
-        /* Unused 
-        private void Chat_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            sendSystemMessage(name + " has left chat.");
-        }
-        */
     }
 }
