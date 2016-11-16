@@ -18,7 +18,8 @@ namespace DogeChat
     public partial class Chat : Form
     {
         //Globals
-        //Name
+
+        //Name of this client
         static string name;
         static string importantName;
         //Connection 
@@ -29,9 +30,8 @@ namespace DogeChat
         UdpClient receive;
         //Listening thread
         Thread listen;
-        //Name of chat log  file
+        //Name of chat log 'logName.txt'
         string logName;
-
         //Delegate for thread safety, showMessage called from one thread must be safely transfered to the other
         delegate void safeMessage(string msg);
 
@@ -81,6 +81,7 @@ namespace DogeChat
             return true;
         }
 
+        //Initialise UDP Client objects using connection info
         private void setUp()
         {
             //Sender
@@ -131,6 +132,7 @@ namespace DogeChat
             }
         }
 
+        //Send button handler
         private void buttonSend_Click(object sender, EventArgs e)
         {
             sendMessage();
@@ -233,22 +235,26 @@ namespace DogeChat
         //Format message and display in window
         private void showMessage(string message)
         {
+            //Modify string
             StringBuilder str = new StringBuilder();
-            //Add current date and time to chat window message
-            DateTime currentDT = DateTime.Now;
-            str.Append(currentDT.ToString() + " ");
-            //Append new lines for appearence
+            //Append line for appearence
             str.AppendLine(message);
+            //DateTime object
+            DateTime currentDT = DateTime.Now;
 
             //Check if important
             if (message.StartsWith("> > >"))
             {
                 //Alert
                 importantAlert();
+
                 //Save to important log if sent by this client
                 if (logName.Equals(importantName))
                 {
-                    saveToChatLog(message);
+                    //Add time-stamp
+                    str.Append(currentDT.ToString() + " ");
+                    //Re-encrypt message
+                    saveToChatLog(System.Text.Encoding.UTF8.GetString(encrypt(message)));
                 }
             }
             else
@@ -256,7 +262,10 @@ namespace DogeChat
                 //Save to normal log if sent by this client
                 if (logName.Equals(name))
                 {
-                    saveToChatLog(message);
+                    //Add time-stamp
+                    str.Append(currentDT.ToString() + " ");
+                    //Re-encrypt message
+                    saveToChatLog(System.Text.Encoding.UTF8.GetString(encrypt(message)));
                 }
             }
 
@@ -266,18 +275,18 @@ namespace DogeChat
 
         //Save the message to text file
         //Correct file determined by value of logName
-        private void saveToChatLog(string log)
+        private void saveToChatLog(string message)
         {
             //Check if file already created
             if (checkExists(logName))
             {
                 //Append
-                File.AppendAllText(logName, log);
+                File.AppendAllText(logName, message);
             }
             else
             {
                 //Create
-                File.WriteAllText(logName, log);
+                File.WriteAllText(logName, message);
             }
         }
 
