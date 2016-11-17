@@ -26,7 +26,7 @@ namespace DogeChat
 
         private void buttonLogin_Click(object sender, EventArgs e)
         {
-            
+            //Unallowed values
             if (textBoxName.Text.Equals("") || textBoxName.Text.StartsWith("> > >"))
             {
                 MessageBox.Show("Illegal name, please provide a valid name.");

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -12,6 +13,7 @@ using System.Windows.Forms;
 using System.Media;
 using System.Security.Cryptography;
 using System.IO;
+
 
 namespace DogeChat
 {
@@ -42,28 +44,27 @@ namespace DogeChat
 
         private void Chat_Load(object sender, EventArgs e)
         {
+            //Initialise logName string, prevent null reference if no name error occurs
+            logName = "";
+            //Perfom initial setup
+            startUp();
+        }
+
+        //Setup
+        private void startUp()
+        {
             //Login form pops up on start
-            using (Login getDetails = new Login())
+            login();
+
+            //Detect if user pressed cancel
+            if (name == null)
             {
-                //Get entered name
-                getDetails.ShowDialog();
-                name = getDetails.name;
-                importantName = getDetails.name + "Important";
-                port = Convert.ToInt32(getDetails.port);
-                address = getDetails.address;
-
-                //Initialise logName string, prevent null reference if no name error occurs
-                logName = "";
-
-                //For testing - error handling later
-                checkValues(name, port, address);
-
-                //Detect if user pressed cancel
-                if (name == null)
-                {
-                    this.Close();
-                }
-                else
+                this.Close();
+            }
+            else
+            {
+                //Are values valid
+                if (checkValues(port, address))
                 {
                     //Set up Udp clients
                     setUp();
@@ -71,25 +72,71 @@ namespace DogeChat
                     textBoxMessage.Text = "<is now chatting>";
                     sendMessage();
                 }
+                else
+                {
+                    //Try again
+                    startUp();
+                }
+            }
+
+        }
+
+        //Let the user choose a name, IP and Port
+        private void login()
+        {
+            using (Login getDetails = new Login())
+            {
+                //Open Login form
+                getDetails.ShowDialog();
+                //Get name, port and address
+                name = getDetails.name;
+                importantName = getDetails.name + "Important";
+                port = Convert.ToInt32(getDetails.port);
+                address = getDetails.address;
             }
         }
 
-        //ADD ERROR HANDLING HERE
-        private Boolean checkValues(string name, int port, string address)
+        //Ensure valid values are used
+        private Boolean checkValues(int port, string address)
         {
-            Console.WriteLine("Name: " + name);
-            Console.WriteLine("IP: " + address);
-            Console.WriteLine("Port: " + port);
+            //Regular expression for IETF IPv4 standard address
+            Regex ip = new Regex(@"^([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])$");
 
-            return true;
+            if (port > 65535 || port < 0)
+            {
+                //Invalid port
+                MessageBox.Show("Invalid Port");
+                return false;
+            }
+            else if (!ip.IsMatch(address))
+            {
+                //Invalid IP
+                MessageBox.Show("Invalid IP Address");
+                return false;
+            }
+            else
+            {
+                //Values ok
+                return true;
+            }
         }
 
         //Initialise UDP Client objects using connection info
         private void setUp()
         {
-            //Sender
-            send = new UdpClient(address, port);
-            send.EnableBroadcast = true;
+            try
+            {
+                //Sender
+                send = new UdpClient(address, port);
+                send.EnableBroadcast = true;
+            }
+            //Invalid IP not caught by error handling due to leading zeros i.e. '255.255.255.25' taken as '255.255.255.025'
+            catch (System.Net.Sockets.SocketException e)
+            {
+                //Report error and close
+                MessageBox.Show(e.ToString(), "Socket Error");
+                Close();
+            }
 
             //Receiver
             receive = new UdpClient(port);
